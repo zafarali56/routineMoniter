@@ -1,52 +1,42 @@
 import SwiftUICore
 import SwiftUI
 
-
 struct RoutineListView: View {
-	@State private var routines: [Routine] = [
-		Routine(id: UUID().uuidString, title: "Morning Run", description: "Go for a 5km run", time: Date()),
-		Routine(id: UUID().uuidString, title: "Team Meeting", description: "Daily stand-up with the team", time: Date().addingTimeInterval(3600)),
-		Routine(id: UUID().uuidString, title: "Workout", description: "Complete upper body workout", time: Date().addingTimeInterval(7200))
-	]
-	@State private var selectedRoutine: Routine? = nil
-	@State private var isEditing: Bool = false
+	@StateObject private var viewModel = RoutineViewModel()
 
 	var body: some View {
 		NavigationView {
 			List {
-				ForEach(routines) { routine in
-					RoutineView(routine: routine)
-						.onTapGesture {
-							selectedRoutine = routine
-							isEditing = true
-						}
-						.padding(.vertical, 4)
+				ForEach(viewModel.routines) { routine in
+					RoutineView(routine: routine, onDelete: {
+						viewModel.deleteRoutine(routine)
+					})
+					.onTapGesture {
+						viewModel.selectedRoutine = routine
+						viewModel.isEditing = true
+					}
+					.padding(.vertical, 4)
 				}
-				.onDelete(perform: removeRoutine)
+				.onDelete(perform: viewModel.removeRoutine)
 			}
 			.navigationTitle("My Routines")
 			.toolbar {
 				ToolbarItem(placement: .navigationBarTrailing) {
-					Button(action: addRoutine) {
+					Button(action: viewModel.addRoutine) {
 						Image(systemName: "plus")
 					}
 				}
 			}
-			.sheet(item: $selectedRoutine) { routine in
-				EditRoutineView(routine: $routines[routines.firstIndex(where: { $0.id == routine.id })!])
+			.sheet(item: $viewModel.selectedRoutine) { routine in
+				EditRoutineView(routine: Binding(
+					get: { routine },
+					set: { viewModel.updateRoutine($0) }
+				))
 			}
 		}
 	}
-
-	func addRoutine() {
-		let newRoutine = Routine(id: UUID().uuidString, title: "New Routine", description: "Routine description", time: Date().addingTimeInterval(3600))
-		routines.append(newRoutine)
-	}
-
-	func removeRoutine(at offsets: IndexSet) {
-		routines.remove(atOffsets: offsets)
-	}
 }
+
 
 #Preview {
 	RoutineListView()

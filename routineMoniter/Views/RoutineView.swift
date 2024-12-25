@@ -7,8 +7,10 @@
 
 import SwiftUI
 
+
 struct RoutineView: View {
 	var routine: Routine
+	var onDelete: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 8) {
@@ -29,6 +31,12 @@ struct RoutineView: View {
 					.font(.caption)
 					.foregroundColor(.gray)
 			}
+
+			Button(action: onDelete) {
+				Text("Swipe left to delete")
+					.foregroundColor(.red)
+			}
+			.padding(.top, 8)
 		}
 		.padding()
 		.background(Color(UIColor.secondarySystemBackground))
@@ -43,6 +51,4 @@ struct RoutineView: View {
 		return formatter
 	}
 }
-#Preview {
-	RoutineView(routine: Routine(id: UUID().uuidString, title: "Morning Run", description: "Go for a 5km run", time: Date()))
-}
+
