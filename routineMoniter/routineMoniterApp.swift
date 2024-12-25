@@ -19,9 +19,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 @main
 struct routineMoniterApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
+	var body: some Scene {
+		WindowGroup {
+			RoutineListView()
+		}
+	}
 }
