@@ -19,6 +19,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 @main
 struct routineMoniterApp: App {
+	@UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate // Attach AppDelegate
+
 	var body: some Scene {
 		WindowGroup {
 			RoutineListView()

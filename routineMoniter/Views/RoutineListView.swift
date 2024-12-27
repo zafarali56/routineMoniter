@@ -1,16 +1,14 @@
 import SwiftUI
 
-import SwiftUI
-
 struct RoutineListView: View {
-	@StateObject private var viewModel = RoutineViewModel()
+	@StateObject private var viewModel = RoutineViewModel() // Proper initialization of StateObject
 
 	var body: some View {
 		NavigationView {
 			List {
-				ForEach(viewModel.routines, id: \.self) { routine in
+				ForEach(viewModel.routines, id: \.id) { routine in
 					RoutineView(routine: routine, onDelete: {
-						$viewModel.deleteRoutine(routine)
+						viewModel.deleteRoutine(routine) // Correctly references the deleteRoutine method
 					})
 					.onTapGesture {
 						viewModel.selectedRoutine = routine
@@ -18,7 +16,9 @@ struct RoutineListView: View {
 					}
 					.padding(.vertical, 4)
 				}
-				.onDelete(perform: viewModel.removeRoutine)
+				.onDelete(perform: { indexSet in
+					viewModel.removeRoutine(at: indexSet) // Properly handles IndexSet deletions
+				})
 			}
 			.navigationTitle("My Routines")
 			.toolbar {
@@ -37,11 +37,9 @@ struct RoutineListView: View {
 	}
 }
 
-
 #Preview {
 	RoutineListView()
 }
-
 
 struct EditRoutineView: View {
 	var routine: RoutineEntity

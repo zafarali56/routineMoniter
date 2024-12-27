@@ -20,6 +20,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutinesFromFirestore()
 	}
 
+	// MARK: - Core Data Fetch
 	func fetchRoutines() {
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		do {
@@ -29,8 +30,10 @@ class RoutineViewModel: ObservableObject {
 		}
 	}
 
+	// MARK: - Firestore Fetch
 	func fetchRoutinesFromFirestore() {
-		db.collection(collectionName).getDocuments { snapshot, error in
+		db.collection(collectionName).getDocuments { [weak self] snapshot, error in
+			guard let self = self else { return }
 			guard let documents = snapshot?.documents else {
 				print("Error fetching documents: \(String(describing: error))")
 				return
@@ -46,6 +49,7 @@ class RoutineViewModel: ObservableObject {
 			  let title = data["title"] as? String,
 			  let description = data["description"] as? String,
 			  let timestamp = data["time"] as? Timestamp else {
+			print("Invalid Firestore data format")
 			return
 		}
 
@@ -54,10 +58,12 @@ class RoutineViewModel: ObservableObject {
 		routine.title = title
 		routine.routineDescription = description
 		routine.time = timestamp.dateValue()
+
 		manager.save()
-		fetchRoutines()
+		fetchRoutines() // Update local cache after fetching Firestore data
 	}
 
+	// MARK: - Add Routine
 	func addRoutine() {
 		let newRoutine = RoutineEntity(context: context)
 		newRoutine.id = UUID().uuidString
@@ -70,6 +76,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
+	// MARK: - Remove Routine
 	func removeRoutine(at offsets: IndexSet) {
 		offsets.forEach { index in
 			let routine = routines[index]
@@ -80,6 +87,14 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
+	func deleteRoutine(_ routine: RoutineEntity) {
+		context.delete(routine)
+		deleteRoutineFromFirestore(routine: routine)
+		manager.save()
+		fetchRoutines()
+	}
+
+	// MARK: - Update Routine
 	func updateRoutine(_ routine: RoutineEntity, title: String, description: String, time: Date) {
 		routine.title = title
 		routine.routineDescription = description
@@ -90,11 +105,16 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
+	// MARK: - Firestore Sync
+	// MARK: - Firestore Sync
 	func saveRoutineToFirestore(routine: RoutineEntity) {
 		guard let id = routine.id,
 			  let title = routine.title,
 			  let description = routine.routineDescription,
-			  let time = routine.time else { return }
+			  let time = routine.time else {
+			print("Routine data is incomplete")
+			return
+		}
 
 		let data: [String: Any] = [
 			"id": id,
