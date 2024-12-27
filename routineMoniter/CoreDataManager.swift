@@ -5,8 +5,7 @@ class CoreDataManager {
 
 	let persistentContainer: NSPersistentContainer
 	init() {
-		// Initialize the persistent container with the correct name
-		persistentContainer = NSPersistentContainer(name: "Routine") // Matches the .xcdatamodeld file name
+		persistentContainer = NSPersistentContainer(name: "Routine")
 		persistentContainer.loadPersistentStores { description, error in
 			if let error = error {
 				fatalError("Unable to initialize Core Data: \(error)")

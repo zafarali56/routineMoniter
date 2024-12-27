@@ -1,24 +1,22 @@
 import SwiftUI
 
 struct RoutineListView: View {
-	@StateObject private var viewModel = RoutineViewModel() // Proper initialization of StateObject
+	@StateObject private var viewModel = RoutineViewModel()
 
 	var body: some View {
 		NavigationView {
 			List {
 				ForEach(viewModel.routines, id: \.id) { routine in
-					RoutineView(routine: routine, onDelete: {
-						viewModel.deleteRoutine(routine) // Correctly references the deleteRoutine method
-					})
-					.onTapGesture {
-						viewModel.selectedRoutine = routine
-						viewModel.isEditing = true
-					}
-					.padding(.vertical, 4)
+					RoutineView(routine: routine)
+						.onTapGesture {
+							viewModel.selectedRoutine = routine
+							viewModel.isEditing = true
+						}
+						.padding(.vertical, 4)
 				}
-				.onDelete(perform: { indexSet in
-					viewModel.removeRoutine(at: indexSet) // Properly handles IndexSet deletions
-				})
+				.onDelete { indexSet in
+					viewModel.removeRoutine(at: indexSet)
+				}
 			}
 			.navigationTitle("My Routines")
 			.toolbar {
@@ -40,11 +38,13 @@ struct RoutineListView: View {
 #Preview {
 	RoutineListView()
 }
+import SwiftUI
 
 struct EditRoutineView: View {
 	var routine: RoutineEntity
 	var onSave: (String, String, Date) -> Void
 
+	@Environment(\.dismiss) private var dismiss
 	@State private var title: String = ""
 	@State private var description: String = ""
 	@State private var time: Date = Date()
@@ -60,17 +60,19 @@ struct EditRoutineView: View {
 			.toolbar {
 				ToolbarItem(placement: .navigationBarTrailing) {
 					Button("Save") {
-						onSave(title, description, time)
+						onSave(title, description, time) // Save the data
+						dismiss() // Dismiss the view after saving
 					}
 				}
 				ToolbarItem(placement: .navigationBarLeading) {
 					Button("Cancel") {
-						// Dismiss
+						dismiss() // Simply dismiss without saving
 					}
 				}
 			}
 		}
 		.onAppear {
+			// Populate the fields with existing routine data
 			title = routine.title ?? ""
 			description = routine.routineDescription ?? ""
 			time = routine.time ?? Date()

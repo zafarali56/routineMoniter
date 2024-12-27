@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RoutineView: View {
 	var routine: RoutineEntity
-	var onDelete: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 8) {
@@ -24,11 +23,10 @@ struct RoutineView: View {
 					.foregroundColor(.gray)
 			}
 
-			Button(action: onDelete) {
-				Text("Delete")
-					.foregroundColor(.red)
-			}
-			.padding(.top, 8)
+			Text("Swipe right to delete")
+				.font(.footnote)
+				.foregroundColor(.gray)
+				.padding(.top, 8)
 		}
 		.padding()
 		.background(Color(UIColor.secondarySystemBackground))

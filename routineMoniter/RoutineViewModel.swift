@@ -20,7 +20,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutinesFromFirestore()
 	}
 
-	// MARK: - Core Data Fetch
+
 	func fetchRoutines() {
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		do {
@@ -30,7 +30,7 @@ class RoutineViewModel: ObservableObject {
 		}
 	}
 
-	// MARK: - Firestore Fetch
+
 	func fetchRoutinesFromFirestore() {
 		db.collection(collectionName).getDocuments { [weak self] snapshot, error in
 			guard let self = self else { return }
@@ -60,10 +60,10 @@ class RoutineViewModel: ObservableObject {
 		routine.time = timestamp.dateValue()
 
 		manager.save()
-		fetchRoutines() // Update local cache after fetching Firestore data
+		fetchRoutines()
 	}
 
-	// MARK: - Add Routine
+
 	func addRoutine() {
 		let newRoutine = RoutineEntity(context: context)
 		newRoutine.id = UUID().uuidString
@@ -76,7 +76,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
-	// MARK: - Remove Routine
+
 	func removeRoutine(at offsets: IndexSet) {
 		offsets.forEach { index in
 			let routine = routines[index]
@@ -94,7 +94,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
-	// MARK: - Update Routine
+
 	func updateRoutine(_ routine: RoutineEntity, title: String, description: String, time: Date) {
 		routine.title = title
 		routine.routineDescription = description
@@ -105,8 +105,7 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutines()
 	}
 
-	// MARK: - Firestore Sync
-	// MARK: - Firestore Sync
+
 	func saveRoutineToFirestore(routine: RoutineEntity) {
 		guard let id = routine.id,
 			  let title = routine.title,
