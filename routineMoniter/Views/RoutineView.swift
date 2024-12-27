@@ -1,25 +1,17 @@
-//
-//  RoutineView.swift
-//  routineMoniter
-//
-//  Created by Zafar Ali on 25/12/2024.
-//
-
 import SwiftUI
 
-
 struct RoutineView: View {
-	var routine: Routine
+	var routine: RoutineEntity
 	var onDelete: () -> Void
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 8) {
-			Text(routine.title)
+			Text(routine.title ?? "Untitled")
 				.font(.headline)
 				.fontWeight(.bold)
 				.lineLimit(1)
 
-			Text(routine.description)
+			Text(routine.routineDescription ?? "No description")
 				.font(.subheadline)
 				.foregroundColor(.secondary)
 				.lineLimit(2)
@@ -27,13 +19,13 @@ struct RoutineView: View {
 			HStack {
 				Image(systemName: "clock")
 					.foregroundColor(.blue)
-				Text(routine.time, formatter: Self.dateFormatter)
+				Text(routine.time ?? Date(), style: .time)
 					.font(.caption)
 					.foregroundColor(.gray)
 			}
 
 			Button(action: onDelete) {
-				Text("Swipe left to delete")
+				Text("Delete")
 					.foregroundColor(.red)
 			}
 			.padding(.top, 8)
@@ -43,12 +35,4 @@ struct RoutineView: View {
 		.cornerRadius(10)
 		.shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
 	}
-
-	private static var dateFormatter: DateFormatter {
-		let formatter = DateFormatter()
-		formatter.dateStyle = .short
-		formatter.timeStyle = .short
-		return formatter
-	}
 }
-

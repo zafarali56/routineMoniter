@@ -1,4 +1,5 @@
-import SwiftUICore
+import SwiftUI
+
 import SwiftUI
 
 struct RoutineListView: View {
@@ -7,9 +8,9 @@ struct RoutineListView: View {
 	var body: some View {
 		NavigationView {
 			List {
-				ForEach(viewModel.routines) { routine in
+				ForEach(viewModel.routines, id: \.self) { routine in
 					RoutineView(routine: routine, onDelete: {
-						viewModel.deleteRoutine(routine)
+						$viewModel.deleteRoutine(routine)
 					})
 					.onTapGesture {
 						viewModel.selectedRoutine = routine
@@ -28,10 +29,9 @@ struct RoutineListView: View {
 				}
 			}
 			.sheet(item: $viewModel.selectedRoutine) { routine in
-				EditRoutineView(routine: Binding(
-					get: { routine },
-					set: { viewModel.updateRoutine($0) }
-				))
+				EditRoutineView(routine: routine) { title, description, time in
+					viewModel.updateRoutine(routine, title: title, description: description, time: time)
+				}
 			}
 		}
 	}
@@ -44,24 +44,38 @@ struct RoutineListView: View {
 
 
 struct EditRoutineView: View {
-	@Binding var routine: Routine
+	var routine: RoutineEntity
+	var onSave: (String, String, Date) -> Void
+
+	@State private var title: String = ""
+	@State private var description: String = ""
+	@State private var time: Date = Date()
 
 	var body: some View {
 		NavigationView {
 			Form {
-				TextField("Title", text: $routine.title)
-				TextField("Description", text: $routine.description)
-				DatePicker("Time", selection: $routine.time, displayedComponents: .hourAndMinute)
+				TextField("Title", text: $title)
+				TextField("Description", text: $description)
+				DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
 			}
 			.navigationTitle("Edit Routine")
 			.toolbar {
+				ToolbarItem(placement: .navigationBarTrailing) {
+					Button("Save") {
+						onSave(title, description, time)
+					}
+				}
 				ToolbarItem(placement: .navigationBarLeading) {
 					Button("Cancel") {
-						// Dismiss sheet
-						UIApplication.shared.windows.first?.rootViewController?.dismiss(animated: true)
+						// Dismiss
 					}
 				}
 			}
+		}
+		.onAppear {
+			title = routine.title ?? ""
+			description = routine.routineDescription ?? ""
+			time = routine.time ?? Date()
 		}
 	}
 }
