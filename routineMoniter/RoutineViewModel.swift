@@ -7,6 +7,8 @@ class RoutineViewModel: ObservableObject {
 	@Published var routines: [RoutineEntity] = []
 	@Published var selectedRoutine: RoutineEntity?
 	@Published var isEditing: Bool = false
+	private var cancellables: Set<AnyCancellable> = []
+
 
 	private let manager = CoreDataManager.shared
 	private var context: NSManagedObjectContext {
@@ -18,7 +20,17 @@ class RoutineViewModel: ObservableObject {
 	init() {
 		fetchRoutines()
 		fetchRoutinesFromFirestore()
+		
+		// Observe network connectivity
+		NetworkMonitor.shared.$isConnected
+			.sink { [weak self] isConnected in
+				if isConnected {
+					self?.syncUnsyncedRoutines()
+				}
+			}
+			.store(in: &cancellables)
 	}
+
 
 	// Fetch routines from Core Data
 	func fetchRoutines() {
@@ -93,10 +105,30 @@ class RoutineViewModel: ObservableObject {
 			"description": description,
 			"time": Timestamp(date: time)
 		]
+
 		db.collection(collectionName).document(id).setData(data) { error in
 			if let error = error {
 				print("Error saving to Firestore: \(error)")
+				routine.needsSync = true // Mark for sync
+				self.manager.save()
+			} else {
+				print("Successfully saved routine to Firestore")
+				routine.needsSync = false // Clear sync flag
+				self.manager.save()
 			}
+		}
+	}
+	func syncUnsyncedRoutines() {
+		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
+		fetchRequest.predicate = NSPredicate(format: "needsSync == %@", NSNumber(value: true))
+
+		do {
+			let unsyncedRoutines = try context.fetch(fetchRequest)
+			for routine in unsyncedRoutines {
+				saveRoutineToFirestore(routine: routine)
+			}
+		} catch {
+			print("Failed to fetch unsynced routines: \(error)")
 		}
 	}
 
@@ -139,9 +171,10 @@ class RoutineViewModel: ObservableObject {
 		routine.title = title
 		routine.routineDescription = description
 		routine.time = time
+		routine.needsSync = true // Mark as needing sync
 
-		saveRoutineToFirestore(routine: routine)
-		manager.save()
-		fetchRoutines()
+		CoreDataManager.shared.save()
 	}
+
+
 }

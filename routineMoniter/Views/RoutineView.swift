@@ -10,11 +10,6 @@ struct RoutineView: View {
 				.fontWeight(.bold)
 				.lineLimit(1)
 
-			Text(routine.routineDescription ?? "No description")
-				.font(.subheadline)
-				.foregroundColor(.secondary)
-				.lineLimit(2)
-
 			HStack {
 				Image(systemName: "clock")
 					.foregroundColor(.blue)

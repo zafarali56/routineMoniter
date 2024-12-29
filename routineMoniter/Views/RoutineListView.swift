@@ -21,20 +21,16 @@ struct RoutineListView: View {
 			.navigationTitle("My Routines")
 			.toolbar {
 				ToolbarItem(placement: .navigationBarTrailing) {
-					Button {
-						viewModel.addRoutine() // Open EditRoutineView
-					} label: {
+					Button(action: viewModel.addRoutine) {
 						Image(systemName: "plus")
 					}
 				}
 			}
 			.sheet(item: $viewModel.selectedRoutine) { routine in
 				EditRoutineView(routine: routine) { title, description, time in
-					// Save the routine only when the user presses Save
 					viewModel.updateRoutine(routine, title: title, description: description, time: time)
 				}
 			}
-
 		}
 	}
 }
@@ -42,7 +38,6 @@ struct RoutineListView: View {
 #Preview {
 	RoutineListView()
 }
-import SwiftUI
 
 struct EditRoutineView: View {
 	var routine: RoutineEntity

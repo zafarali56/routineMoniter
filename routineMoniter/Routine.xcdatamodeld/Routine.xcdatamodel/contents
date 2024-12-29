@@ -2,6 +2,7 @@
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24C101" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="RoutineEntity" representedClassName="RoutineEntity" syncable="YES">
         <attribute name="id" optional="YES" attributeType="String"/>
+        <attribute name="needsSync" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="routineDescription" optional="YES" attributeType="String"/>
         <attribute name="time" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
