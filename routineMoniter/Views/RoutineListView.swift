@@ -21,16 +21,20 @@ struct RoutineListView: View {
 			.navigationTitle("My Routines")
 			.toolbar {
 				ToolbarItem(placement: .navigationBarTrailing) {
-					Button(action: viewModel.addRoutine) {
+					Button {
+						viewModel.addRoutine() // Open EditRoutineView
+					} label: {
 						Image(systemName: "plus")
 					}
 				}
 			}
 			.sheet(item: $viewModel.selectedRoutine) { routine in
 				EditRoutineView(routine: routine) { title, description, time in
+					// Save the routine only when the user presses Save
 					viewModel.updateRoutine(routine, title: title, description: description, time: time)
 				}
 			}
+
 		}
 	}
 }

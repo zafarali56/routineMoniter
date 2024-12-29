@@ -20,17 +20,19 @@ class RoutineViewModel: ObservableObject {
 		fetchRoutinesFromFirestore()
 	}
 
-
+	// Fetch routines from Core Data
 	func fetchRoutines() {
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		do {
-			self.routines = try context.fetch(fetchRequest)
+			let routines = try context.fetch(fetchRequest)
+			print("Fetched routines: \(routines.map { $0.id ?? "No ID" })")
+			self.routines = routines
 		} catch {
 			print("Failed to fetch routines: \(error)")
 		}
 	}
 
-
+	// Fetch routines from Firestore and save them to Core Data if they don't already exist
 	func fetchRoutinesFromFirestore() {
 		db.collection(collectionName).getDocuments { [weak self] snapshot, error in
 			guard let self = self else { return }
@@ -44,6 +46,7 @@ class RoutineViewModel: ObservableObject {
 		}
 	}
 
+	// Save routine data from Firestore to Core Data
 	private func saveRoutineFromFirestore(data: [String: Any]) {
 		guard let id = data["id"] as? String,
 			  let title = data["title"] as? String,
@@ -53,59 +56,28 @@ class RoutineViewModel: ObservableObject {
 			return
 		}
 
-		let routine = RoutineEntity(context: context)
-		routine.id = id
-		routine.title = title
-		routine.routineDescription = description
-		routine.time = timestamp.dateValue()
+		// Explicitly cast fetch request to RoutineEntity type
+		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
+		fetchRequest.predicate = NSPredicate(format: "id == %@", id)
 
-		manager.save()
-		fetchRoutines()
-	}
+		do {
+			let existingRoutines = try context.fetch(fetchRequest)
+			if existingRoutines.isEmpty {
+				// Only create a new routine if it doesn't exist
+				let routine = RoutineEntity(context: context)
+				routine.id = id
+				routine.title = title
+				routine.routineDescription = description
+				routine.time = timestamp.dateValue()
 
-
-	func addRoutine() {
-		let newRoutine = RoutineEntity(context: context)
-		newRoutine.id = UUID().uuidString
-		newRoutine.title = "New Routine"
-		newRoutine.routineDescription = "Routine description"
-		newRoutine.time = Date().addingTimeInterval(3600)
-
-		saveRoutineToFirestore(routine: newRoutine)
-		manager.save()
-		fetchRoutines()
-	}
-
-
-	func removeRoutine(at offsets: IndexSet) {
-		offsets.forEach { index in
-			let routine = routines[index]
-			deleteRoutineFromFirestore(routine: routine)
-			context.delete(routine)
+				manager.save()
+			}
+		} catch {
+			print("Failed to fetch existing routine: \(error)")
 		}
-		manager.save()
-		fetchRoutines()
 	}
 
-	func deleteRoutine(_ routine: RoutineEntity) {
-		context.delete(routine)
-		deleteRoutineFromFirestore(routine: routine)
-		manager.save()
-		fetchRoutines()
-	}
-
-
-	func updateRoutine(_ routine: RoutineEntity, title: String, description: String, time: Date) {
-		routine.title = title
-		routine.routineDescription = description
-		routine.time = time
-
-		saveRoutineToFirestore(routine: routine)
-		manager.save()
-		fetchRoutines()
-	}
-
-
+	// Save routine to Firestore
 	func saveRoutineToFirestore(routine: RoutineEntity) {
 		guard let id = routine.id,
 			  let title = routine.title,
@@ -128,6 +100,31 @@ class RoutineViewModel: ObservableObject {
 		}
 	}
 
+	// Add a new routine and open it in EditRoutineView
+	func addRoutine() {
+		let newRoutine = RoutineEntity(context: context)
+		newRoutine.id = UUID().uuidString
+		newRoutine.title = "" // Placeholder for user input
+		newRoutine.routineDescription = "" // Placeholder for user input
+		newRoutine.time = Date() // Default value
+
+		// Set for editing only; do not save
+		selectedRoutine = newRoutine
+		isEditing = true
+	}
+
+	// Remove routine from Core Data and Firestore
+	func removeRoutine(at offsets: IndexSet) {
+		offsets.forEach { index in
+			let routine = routines[index]
+			deleteRoutineFromFirestore(routine: routine)
+			context.delete(routine)
+		}
+		manager.save()
+		fetchRoutines()
+	}
+
+	// Delete routine from Firestore
 	func deleteRoutineFromFirestore(routine: RoutineEntity) {
 		guard let id = routine.id else { return }
 		db.collection(collectionName).document(id).delete { error in
@@ -135,5 +132,16 @@ class RoutineViewModel: ObservableObject {
 				print("Error deleting from Firestore: \(error)")
 			}
 		}
+	}
+
+	// Update an existing routine
+	func updateRoutine(_ routine: RoutineEntity, title: String, description: String, time: Date) {
+		routine.title = title
+		routine.routineDescription = description
+		routine.time = time
+
+		saveRoutineToFirestore(routine: routine)
+		manager.save()
+		fetchRoutines()
 	}
 }
