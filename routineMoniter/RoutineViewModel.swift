@@ -8,15 +8,15 @@ class RoutineViewModel: ObservableObject {
 	@Published var selectedRoutine: RoutineEntity?
 	@Published var isEditing: Bool = false
 	private var cancellables: Set<AnyCancellable> = []
-
-
+	
+	
 	private let manager = CoreDataManager.shared
 	private var context: NSManagedObjectContext {
 		return manager.context
 	}
 	private let db = Firestore.firestore()
 	private let collectionName = "routines"
-
+	
 	init() {
 		fetchRoutines()
 		fetchRoutinesFromFirestore()
@@ -30,20 +30,22 @@ class RoutineViewModel: ObservableObject {
 			}
 			.store(in: &cancellables)
 	}
-
-
+	
+	
 	// Fetch routines from Core Data
 	func fetchRoutines() {
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		do {
-			let routines = try context.fetch(fetchRequest)
-			print("Fetched routines: \(routines.map { $0.id ?? "No ID" })")
-			self.routines = routines
+			let fetched = try context.fetch(fetchRequest)
+			DispatchQueue.main.async {
+				self.routines = fetched
+			}
 		} catch {
 			print("Failed to fetch routines: \(error)")
 		}
 	}
-
+	
+	
 	// Fetch routines from Firestore and save them to Core Data if they don't already exist
 	func fetchRoutinesFromFirestore() {
 		db.collection(collectionName).getDocuments { [weak self] snapshot, error in
@@ -57,7 +59,7 @@ class RoutineViewModel: ObservableObject {
 			}
 		}
 	}
-
+	
 	// Save routine data from Firestore to Core Data
 	private func saveRoutineFromFirestore(data: [String: Any]) {
 		guard let id = data["id"] as? String,
@@ -67,11 +69,11 @@ class RoutineViewModel: ObservableObject {
 			print("Invalid Firestore data format")
 			return
 		}
-
+		
 		// Explicitly cast fetch request to RoutineEntity type
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		fetchRequest.predicate = NSPredicate(format: "id == %@", id)
-
+		
 		do {
 			let existingRoutines = try context.fetch(fetchRequest)
 			if existingRoutines.isEmpty {
@@ -81,14 +83,14 @@ class RoutineViewModel: ObservableObject {
 				routine.title = title
 				routine.routineDescription = description
 				routine.time = timestamp.dateValue()
-
+				
 				manager.save()
 			}
 		} catch {
 			print("Failed to fetch existing routine: \(error)")
 		}
 	}
-
+	
 	// Save routine to Firestore
 	func saveRoutineToFirestore(routine: RoutineEntity) {
 		guard let id = routine.id,
@@ -98,14 +100,14 @@ class RoutineViewModel: ObservableObject {
 			print("Routine data is incomplete")
 			return
 		}
-
+		
 		let data: [String: Any] = [
 			"id": id,
 			"title": title,
 			"description": description,
 			"time": Timestamp(date: time)
 		]
-
+		
 		db.collection(collectionName).document(id).setData(data) { error in
 			if let error = error {
 				print("Error saving to Firestore: \(error)")
@@ -121,7 +123,7 @@ class RoutineViewModel: ObservableObject {
 	func syncUnsyncedRoutines() {
 		let fetchRequest: NSFetchRequest<RoutineEntity> = RoutineEntity.fetchRequest() as! NSFetchRequest<RoutineEntity>
 		fetchRequest.predicate = NSPredicate(format: "needsSync == %@", NSNumber(value: true))
-
+		
 		do {
 			let unsyncedRoutines = try context.fetch(fetchRequest)
 			for routine in unsyncedRoutines {
@@ -131,20 +133,30 @@ class RoutineViewModel: ObservableObject {
 			print("Failed to fetch unsynced routines: \(error)")
 		}
 	}
-
-	// Add a new routine and open it in EditRoutineView
-	func addRoutine() {
+	
+	func addRoutine() -> RoutineEntity {
 		let newRoutine = RoutineEntity(context: context)
 		newRoutine.id = UUID().uuidString
-		newRoutine.title = "" // Placeholder for user input
-		newRoutine.routineDescription = "" // Placeholder for user input
-		newRoutine.time = Date() // Default value
-
-		// Set for editing only; do not save
-		selectedRoutine = newRoutine
-		isEditing = true
+		newRoutine.title = "" // or your placeholder
+		newRoutine.routineDescription = ""
+		newRoutine.time = Date()
+		newRoutine.needsSync = true
+		
+		// Immediately save to Core Data
+		manager.save()
+		
+		// If we want to also instantly push to Firestore when online:
+		saveRoutineToFirestore(routine: newRoutine)
+		
+		// Refresh our routines array
+		fetchRoutines()
+		
+		return newRoutine
 	}
-
+	
+	
+	
+	
 	// Remove routine from Core Data and Firestore
 	func removeRoutine(at offsets: IndexSet) {
 		offsets.forEach { index in
@@ -155,7 +167,8 @@ class RoutineViewModel: ObservableObject {
 		manager.save()
 		fetchRoutines()
 	}
-
+	
+	
 	// Delete routine from Firestore
 	func deleteRoutineFromFirestore(routine: RoutineEntity) {
 		guard let id = routine.id else { return }
@@ -165,16 +178,19 @@ class RoutineViewModel: ObservableObject {
 			}
 		}
 	}
-
-	// Update an existing routine
+	
 	func updateRoutine(_ routine: RoutineEntity, title: String, description: String, time: Date) {
 		routine.title = title
 		routine.routineDescription = description
 		routine.time = time
 		routine.needsSync = true // Mark as needing sync
-
-		CoreDataManager.shared.save()
+		
+		manager.save()
+		// 2) Immediately save to Firestore
+		saveRoutineToFirestore(routine: routine)
+		// Refresh your @Published array
+		fetchRoutines()
 	}
-
-
+	
+	
 }
